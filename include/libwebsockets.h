@@ -663,6 +663,8 @@ struct lws;
 #include <mbedtls/sha1.h>
 #include <mbedtls/sha256.h>
 #include <mbedtls/sha512.h>
+#include <mbedtls/ecdsa.h>
+#include <mbedtls/ecdh.h>
 #endif
 
 #include <libwebsockets/lws-genhash.h>
