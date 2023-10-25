@@ -139,8 +139,10 @@ int ssl_pm_new(SSL *ssl)
     max_content_len = (unsigned int)ssl->ctx->read_buffer_len;
     // printf("ssl->ctx->read_buffer_len = %d ++++++++++++++++++++\n", ssl->ctx->read_buffer_len);
 
-    mbedtls_net_init(&ssl_pm->fd);
-    mbedtls_net_init(&ssl_pm->cl_fd);
+    ssl_pm->fd.fd = -1;
+    ssl_pm->cl_fd.fd = -1;
+    // mbedtls_net_init(&ssl_pm->fd);
+    // mbedtls_net_init(&ssl_pm->cl_fd);
 
     mbedtls_ssl_config_init(&ssl_pm->conf);
     mbedtls_ctr_drbg_init(&ssl_pm->ctr_drbg);
