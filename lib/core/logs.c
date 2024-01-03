@@ -24,6 +24,15 @@
 
 #include "private-lib-core.h"
 
+#if defined(LWS_PLAT_FREERTOS)
+#include "cli_cmd.h"
+#include "cli_logs.h"
+void lwsl_emit_platformv(int level, const char *line)
+{
+	CLI_LOG("[LWS]%s\n", line);
+}
+#endif
+
 #ifdef LWS_HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -34,7 +43,11 @@ void lwsl_emit_optee(int level, const char *line);
 
 lws_log_cx_t log_cx = {
 #if !defined(LWS_PLAT_OPTEE)
+#if defined(LWS_PLAT_FREERTOS)
+	.u.emit				= lwsl_emit_platformv,
+#else
 	.u.emit				= lwsl_emit_stderr,
+#endif
 #else
 	.u.emit				= lwsl_emit_optee,
 #endif

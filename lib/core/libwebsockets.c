@@ -29,6 +29,16 @@
 #endif
 #include <signal.h>
 
+#if defined(LWS_PLAT_FREERTOS)
+#include "FreeRTOS.h"
+int gettimeofday(struct timeval* ptv, void* ptr)
+{
+	TickType_t tick = xTaskGetTickCount();
+	ptv->tv_sec = tick / configTICK_RATE_HZ;
+	ptv->tv_usec = (tick % configTICK_RATE_HZ) * 1000;
+}
+#endif
+
 void
 lws_ser_wu16be(uint8_t *b, uint16_t u)
 {
