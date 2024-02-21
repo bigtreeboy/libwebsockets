@@ -24,6 +24,36 @@
 
 #include "private-lib-core.h"
 
+#if defined(LWS_PLAT_FREERTOS)
+typedef struct mbedtls_net_context {
+    /** The underlying file descriptor.
+     *
+     * This field is only guaranteed to be present on POSIX/Unix-like platforms.
+     * On other platforms, it may have a different type, have a different
+     * meaning, or be absent altogether.
+     */
+    int fd;
+}
+mbedtls_net_context;
+struct ssl_pm
+{
+    /* local socket file description */
+    mbedtls_net_context fd;
+    /* remote client socket file description */
+    mbedtls_net_context cl_fd;
+
+    mbedtls_ssl_config conf;
+
+    mbedtls_ctr_drbg_context ctr_drbg;
+
+    mbedtls_ssl_context ssl;
+
+    mbedtls_entropy_context entropy;
+
+    SSL *owner;
+};
+#endif
+
 void
 lws_client_http_body_pending(struct lws *wsi, int something_left_to_send)
 {
@@ -412,7 +442,15 @@ client_http_body_sent:
 				return 0;
 			if (buffered < 0 || eb.len < 0) {
 				cce = "read failed";
+#if defined(LWS_PLAT_FREERTOS)
+				if(((struct ssl_pm *)wsi->tls.ssl->ssl_pm)->ssl.private_in_msgtype == 22)
+					//if post-handshake message, continue
+					continue;
+				else
+					goto bail3;
+#else
 				goto bail3;
+#endif
 			}
 			if (!eb.len)
 				return 0;
@@ -718,7 +756,7 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 		    && !wsi->client_bound_sspc
 #endif
 		   ) {
-	
+
 			lws_ss_handle_t *h = (lws_ss_handle_t *)lws_get_opaque_user_data(wsi);
 
 			if (h)

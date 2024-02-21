@@ -76,11 +76,15 @@ unsigned int max_content_len;
 //#ifdef CONFIG_OPENSSL_LOWLEVEL_DEBUG
 
 /* mbedtls debug level */
-#define MBEDTLS_DEBUG_LEVEL 4
+#define MBEDTLS_DEBUG_LEVEL 8
 
 /**
  * @brief mbedtls debug function
  */
+#if defined(MBEDTLS_1_3_ADJUST)
+#include "cli_cmd.h"
+#include "cli_logs.h"
+#endif
 static void ssl_platform_debug(void *ctx, int level,
                      const char *file, int line,
                      const char *str)
@@ -94,7 +98,11 @@ static void ssl_platform_debug(void *ctx, int level,
   //  if(file_sep)
     //    file = file_sep + 1;
 
+#if defined(MBEDTLS_1_3_ADJUST)
+    CLI_LOG("%s:%d %s\n", file, line, str);
+#else
     printf("%s:%d %s", file, line, str);
+#endif
 }
 //#endif
 
@@ -139,14 +147,21 @@ int ssl_pm_new(SSL *ssl)
     max_content_len = (unsigned int)ssl->ctx->read_buffer_len;
     // printf("ssl->ctx->read_buffer_len = %d ++++++++++++++++++++\n", ssl->ctx->read_buffer_len);
 
-    mbedtls_net_init(&ssl_pm->fd);
-    mbedtls_net_init(&ssl_pm->cl_fd);
+    ssl_pm->fd.fd = -1;
+    ssl_pm->cl_fd.fd = -1;
+    // mbedtls_net_init(&ssl_pm->fd);
+    // mbedtls_net_init(&ssl_pm->cl_fd);
 
     mbedtls_ssl_config_init(&ssl_pm->conf);
     mbedtls_ctr_drbg_init(&ssl_pm->ctr_drbg);
     mbedtls_entropy_init(&ssl_pm->entropy);
     mbedtls_ssl_init(&ssl_pm->ssl);
-
+#if defined(MBEDTLS_1_3_ADJUST)
+    psa_status_t status = psa_crypto_init();
+    if (status != PSA_SUCCESS) {
+        goto mbedtls_err2;
+    }
+#endif /* MBEDTLS_1_3_ADJUST */
 #if defined(LWS_HAVE_mbedtls_ssl_set_verify)
     mbedtls_ssl_set_verify(&ssl_pm->ssl, lws_mbedtls_f_vrfy, ssl_pm);
 #else
@@ -184,7 +199,10 @@ int ssl_pm_new(SSL *ssl)
     } else {
         mbedtls_ssl_conf_max_version(&ssl_pm->conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
 
-#if defined(MBEDTLS_SSL_PROTO_TLS1_2)
+#if defined(MBEDTLS_SSL_PROTO_TLS1_3)
+        mbedtls_ssl_conf_max_version(&ssl_pm->conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_4);
+        mbedtls_ssl_conf_min_version(&ssl_pm->conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_4);
+#elif defined(MBEDTLS_SSL_PROTO_TLS1_2)
         mbedtls_ssl_conf_min_version(&ssl_pm->conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
 #else
         mbedtls_ssl_conf_min_version(&ssl_pm->conf, MBEDTLS_SSL_MAJOR_VERSION_3, 1);
@@ -194,7 +212,7 @@ int ssl_pm_new(SSL *ssl)
     mbedtls_ssl_conf_rng(&ssl_pm->conf, mbedtls_ctr_drbg_random, &ssl_pm->ctr_drbg);
 
 //#ifdef CONFIG_OPENSSL_LOWLEVEL_DEBUG
- //   mbedtls_debug_set_threshold(MBEDTLS_DEBUG_LEVEL);
+    mbedtls_debug_set_threshold(MBEDTLS_DEBUG_LEVEL);
 //    mbedtls_ssl_conf_dbg(&ssl_pm->conf, ssl_platform_debug, NULL);
 //#else
     mbedtls_ssl_conf_dbg(&ssl_pm->conf, ssl_platform_debug, NULL);
