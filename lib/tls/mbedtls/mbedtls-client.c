@@ -513,7 +513,7 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 	} else if (key_mem && key_mem_len) {
 		/* lwsl_hexdump_notice(cert_mem, cert_mem_len - 1); */
 		n = SSL_CTX_use_PrivateKey_ASN1(0, vh->tls.ssl_client_ctx,
-				key_mem, (long)key_mem_len - 1);
+				key_mem, (long)key_mem_len + 1);
 
 		if (n < 1) {
 			lwsl_err("%s: (mbedtls) problem interpreting private key\n",
