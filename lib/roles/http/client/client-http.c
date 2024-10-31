@@ -443,7 +443,7 @@ client_http_body_sent:
 			if (buffered < 0 || eb.len < 0) {
 				cce = "read failed";
 #if defined(LWS_PLAT_FREERTOS)
-				if((((struct ssl_pm *)wsi->tls.ssl != NULL) && ((struct ssl_pm *)wsi->tls.ssl->ssl_pm != NULL) && ((struct ssl_pm *)wsi->tls.ssl->ssl_pm)->ssl.private_in_msgtype == 22)
+				if(((struct ssl_pm *)wsi->tls.ssl != NULL) && ((struct ssl_pm *)wsi->tls.ssl->ssl_pm != NULL) && (((struct ssl_pm *)wsi->tls.ssl->ssl_pm)->ssl.private_in_msgtype == 22))
 					//if post-handshake message, continue
 					continue;
 				else
